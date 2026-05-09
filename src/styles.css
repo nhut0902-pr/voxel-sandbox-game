@@ -59,21 +59,37 @@ html, body {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+  html, body {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  #gameCanvas {
+    touch-action: none;
+  }
+
   #health-bar,
   #hunger-bar {
-    width: 120px;
-    height: 16px;
-    font-size: 10px;
+    display: none;
   }
 
   .hotbar-slot {
-    width: 32px;
-    height: 32px;
-    font-size: 10px;
+    display: none;
   }
 
   #crosshair {
     font-size: 18px;
+  }
+
+  #mobile-ui-container {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  button {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 
@@ -284,12 +300,6 @@ html, body {
 }
 
 @media (max-width: 480px) {
-  .hotbar-slot {
-    width: 28px;
-    height: 28px;
-    font-size: 8px;
-  }
-
   #crosshair {
     font-size: 16px;
   }
@@ -307,5 +317,10 @@ html, body {
   .pause-menu-content button {
     padding: 10px;
     font-size: 14px;
+  }
+
+  #mobile-ui-container {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }

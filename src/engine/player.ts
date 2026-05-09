@@ -54,11 +54,12 @@ export class Player {
 
   private setupControls(): void {
     document.addEventListener('keydown', (e) => {
-      this.keys[e.key.toLowerCase()] = true;
+      const key = e.key.toLowerCase();
+      this.keys[key] = true;
 
-      if (e.key === 'f') this.data.isFlying = !this.data.isFlying;
-      if (e.key === 'Shift') this.data.isSprinting = true;
-      if (e.key === ' ') this.jump();
+      if (key === 'f') this.data.isFlying = !this.data.isFlying;
+      if (key === 'shift' || key === 'Shift') this.data.isSprinting = true;
+      if (key === ' ') this.jump();
 
       // Hotbar selection
       const num = parseInt(e.key);
@@ -68,13 +69,15 @@ export class Player {
     });
 
     document.addEventListener('keyup', (e) => {
-      this.keys[e.key.toLowerCase()] = false;
-      if (e.key === 'Shift') this.data.isSprinting = false;
+      const key = e.key.toLowerCase();
+      this.keys[key] = false;
+      if (key === 'shift') this.data.isSprinting = false;
     });
 
     document.addEventListener('mousemove', (e) => {
-      this.mouseX = e.movementX || 0;
-      this.mouseY = e.movementY || 0;
+      // Support both native mouse movement and simulated movement from mobile
+      this.mouseX += e.movementX || 0;
+      this.mouseY += e.movementY || 0;
     });
 
     document.addEventListener('click', () => {
@@ -132,10 +135,12 @@ export class Player {
     const forward = new THREE.Vector3();
     const right = new THREE.Vector3();
 
-    forward.setFromMatrixColumn(this.camera.matrix, 0);
+    // Get camera forward direction (Z axis)
+    forward.setFromMatrixColumn(this.camera.matrix, 2);
     forward.y = 0;
     forward.normalize();
 
+    // Get camera right direction (X axis)
     right.setFromMatrixColumn(this.camera.matrix, 0);
     right.y = 0;
     right.normalize();
@@ -143,10 +148,10 @@ export class Player {
     const moveSpeed = this.data.isSprinting ? PLAYER_SPEED * SPRINT_MULTIPLIER : PLAYER_SPEED;
     const moveVector = new THREE.Vector3();
 
-    if (this.keys['w']) moveVector.add(forward);
-    if (this.keys['s']) moveVector.sub(forward);
-    if (this.keys['a']) moveVector.sub(right);
-    if (this.keys['d']) moveVector.add(right);
+    if (this.keys['w'] || this.keys['W']) moveVector.add(forward);
+    if (this.keys['s'] || this.keys['S']) moveVector.sub(forward);
+    if (this.keys['a'] || this.keys['A']) moveVector.sub(right);
+    if (this.keys['d'] || this.keys['D']) moveVector.add(right);
 
     if (moveVector.length() > 0) {
       moveVector.normalize().multiplyScalar(moveSpeed);
@@ -160,7 +165,7 @@ export class Player {
     // Flying mode
     if (this.data.isFlying) {
       if (this.keys[' ']) this.data.velocity.y = moveSpeed;
-      if (this.keys['shift']) this.data.velocity.y = -moveSpeed;
+      if (this.keys['shift'] || this.keys['Shift']) this.data.velocity.y = -moveSpeed;
     }
   }
 

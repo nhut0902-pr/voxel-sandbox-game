@@ -2,6 +2,9 @@ import { GameRenderer } from './engine/renderer';
 import { HUD } from './ui/hud';
 import { AudioManager } from './audio/audioManager';
 import { GameStorage } from './utils/storage';
+import { MobileInputManager } from './mobile/mobileInput';
+import { MobileUI } from './mobile/mobileUI';
+import { AdaptiveQuality } from './mobile/adaptiveQuality';
 import { BlockType } from './types';
 
 export class Game {
@@ -9,10 +12,15 @@ export class Game {
   private hud: HUD;
   private audioManager: AudioManager;
   private storage: GameStorage;
+  private mobileInput: MobileInputManager | null = null;
+  private mobileUI: MobileUI | null = null;
+  private adaptiveQuality: AdaptiveQuality | null = null;
   private isRunning = false;
   private canvas: HTMLCanvasElement;
   private lastClickTime = 0;
   private clickDelay = 100; // ms between clicks
+  private fpsCounter = 0;
+  private lastFpsTime = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -102,6 +110,11 @@ export class Game {
     await this.audioManager.init();
     await this.storage.init();
 
+    // Initialize mobile systems
+    this.mobileInput = new MobileInputManager(this.canvas, this.renderer.getPlayer());
+    this.mobileUI = new MobileUI(this.renderer.getPlayer());
+    this.adaptiveQuality = new AdaptiveQuality(this.renderer);
+
     // Load saved game state if available
     const savedState = await this.storage.loadGameState();
     if (savedState) {
@@ -123,6 +136,24 @@ export class Game {
       if (this.isRunning) {
         this.renderer.render();
         this.hud.update();
+
+        // Update mobile UI
+        if (this.mobileUI) {
+          this.mobileUI.update();
+        }
+
+        // Update adaptive quality
+        if (this.adaptiveQuality) {
+          this.fpsCounter++;
+          const now = performance.now();
+          if (now - this.lastFpsTime >= 1000) {
+            const fps = this.fpsCounter;
+            this.adaptiveQuality.updateQualityBasedOnFPS(fps);
+            this.fpsCounter = 0;
+            this.lastFpsTime = now;
+          }
+        }
+
         requestAnimationFrame(gameLoop);
       }
     };
@@ -152,6 +183,15 @@ export class Game {
     await this.save();
     this.isRunning = false;
     this.hud.dispose();
+
+    if (this.mobileInput) {
+      this.mobileInput.dispose();
+    }
+
+    if (this.mobileUI) {
+      this.mobileUI.dispose();
+    }
+
     this.renderer.dispose();
   }
 
