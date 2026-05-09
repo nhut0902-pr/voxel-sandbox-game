@@ -44,6 +44,9 @@ export class WorldGenerator {
       }
     }
 
+    // Generate trees and vegetation
+    this.generateTrees(blocks, chunkX, chunkZ);
+
     return blocks;
   }
 
@@ -62,7 +65,8 @@ export class WorldGenerator {
     const detailNoise = this.noise2D(x * 0.05, z * 0.05) * 0.5 + 0.5;
     height += detailNoise * 8;
 
-    return Math.floor(Math.max(SEA_LEVEL - 10, Math.min(CHUNK_HEIGHT - 20, height + SEA_LEVEL)));
+    const finalHeight = Math.floor(Math.max(SEA_LEVEL - 10, Math.min(CHUNK_HEIGHT - 20, height + SEA_LEVEL)));
+    return finalHeight;
   }
 
   private getBiome(x: number, z: number): string {
@@ -105,9 +109,9 @@ export class WorldGenerator {
     const depthFromSurface = terrainHeight - y;
 
     if (depthFromSurface === 0) {
-      // Top surface
+      // Top surface - always show grass or sand
       if (biome === 'desert') return BlockType.SAND;
-      if (biome === 'snow') return BlockType.STONE;
+      if (biome === 'snow') return BlockType.SAND;
       return BlockType.GRASS;
     }
 

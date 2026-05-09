@@ -10,7 +10,6 @@ const TEXTURE_SIZE = 1 / TEXTURE_ATLAS_SIZE;
 export class ChunkMesher {
   private textureCanvas: HTMLCanvasElement;
   private textureCtx: CanvasRenderingContext2D;
-  private textureMap: Map<number, number> = new Map();
 
   constructor() {
     this.textureCanvas = document.createElement('canvas');
@@ -71,41 +70,35 @@ export class ChunkMesher {
           if (!isBlockSolid(block.type)) continue;
 
           // Check each face
-          this.addFaceIfVisible(
-            positions, uvs, normals, indices,
-            x, y, z, chunk, neighbors, 'top', vertexCount
-          );
-          vertexCount += 4;
+          if (this.isFaceVisible(x, y, z, 'top', chunk, neighbors)) {
+            this.addFace(positions, uvs, normals, indices, x, y, z, 'top', block.type, vertexCount);
+            vertexCount += 4;
+          }
 
-          this.addFaceIfVisible(
-            positions, uvs, normals, indices,
-            x, y, z, chunk, neighbors, 'bottom', vertexCount
-          );
-          vertexCount += 4;
+          if (this.isFaceVisible(x, y, z, 'bottom', chunk, neighbors)) {
+            this.addFace(positions, uvs, normals, indices, x, y, z, 'bottom', block.type, vertexCount);
+            vertexCount += 4;
+          }
 
-          this.addFaceIfVisible(
-            positions, uvs, normals, indices,
-            x, y, z, chunk, neighbors, 'front', vertexCount
-          );
-          vertexCount += 4;
+          if (this.isFaceVisible(x, y, z, 'front', chunk, neighbors)) {
+            this.addFace(positions, uvs, normals, indices, x, y, z, 'front', block.type, vertexCount);
+            vertexCount += 4;
+          }
 
-          this.addFaceIfVisible(
-            positions, uvs, normals, indices,
-            x, y, z, chunk, neighbors, 'back', vertexCount
-          );
-          vertexCount += 4;
+          if (this.isFaceVisible(x, y, z, 'back', chunk, neighbors)) {
+            this.addFace(positions, uvs, normals, indices, x, y, z, 'back', block.type, vertexCount);
+            vertexCount += 4;
+          }
 
-          this.addFaceIfVisible(
-            positions, uvs, normals, indices,
-            x, y, z, chunk, neighbors, 'left', vertexCount
-          );
-          vertexCount += 4;
+          if (this.isFaceVisible(x, y, z, 'left', chunk, neighbors)) {
+            this.addFace(positions, uvs, normals, indices, x, y, z, 'left', block.type, vertexCount);
+            vertexCount += 4;
+          }
 
-          this.addFaceIfVisible(
-            positions, uvs, normals, indices,
-            x, y, z, chunk, neighbors, 'right', vertexCount
-          );
-          vertexCount += 4;
+          if (this.isFaceVisible(x, y, z, 'right', chunk, neighbors)) {
+            this.addFace(positions, uvs, normals, indices, x, y, z, 'right', block.type, vertexCount);
+            vertexCount += 4;
+          }
         }
       }
     }
@@ -116,6 +109,7 @@ export class ChunkMesher {
     geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
     geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3));
     geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+    geometry.computeVertexNormals();
 
     const texture = new THREE.CanvasTexture(this.textureCanvas);
     texture.magFilter = THREE.NearestFilter;
@@ -123,32 +117,47 @@ export class ChunkMesher {
 
     const material = new THREE.MeshPhongMaterial({
       map: texture,
-      flatShading: true,
+      flatShading: false,
+      side: THREE.FrontSide,
     });
 
     return new THREE.Mesh(geometry, material);
   }
 
-  private addFaceIfVisible(
-    positions: number[], uvs: number[], normals: number[], indices: number[],
-    x: number, y: number, z: number, chunk: Chunk, neighbors: any,
-    face: string, vertexCount: number
-  ): void {
-    const block = chunk.blocks[x][z][y];
+  private isFaceVisible(
+    x: number,
+    y: number,
+    z: number,
+    face: string,
+    chunk: Chunk,
+    neighbors: any
+  ): boolean {
     const faceDir = this.getFaceDirection(face);
-    const neighborPos = { x: x + faceDir.x, y: y + faceDir.y, z: z + faceDir.z };
-    const neighborBlock = this.getNeighborBlock(chunk, neighbors, neighborPos);
+    const nx = x + faceDir.x;
+    const ny = y + faceDir.y;
+    const nz = z + faceDir.z;
 
-    if (neighborBlock && (isBlockSolid(neighborBlock.type) || (!isBlockTransparent(block.type) && isBlockTransparent(neighborBlock.type)))) {
-      return; // Face is hidden
+    const neighborBlock = this.getNeighborBlock(chunk, neighbors, { x: nx, y: ny, z: nz });
+
+    // Face is visible if neighbor is air or transparent
+    if (!neighborBlock || !isBlockSolid(neighborBlock.type)) {
+      return true;
     }
 
-    this.addFace(positions, uvs, normals, indices, x, y, z, face, block.type, vertexCount);
+    return false;
   }
 
   private addFace(
-    positions: number[], uvs: number[], normals: number[], indices: number[],
-    x: number, y: number, z: number, face: string, blockType: number, vertexCount: number
+    positions: number[],
+    uvs: number[],
+    normals: number[],
+    indices: number[],
+    x: number,
+    y: number,
+    z: number,
+    face: string,
+    blockType: number,
+    vertexCount: number
   ): void {
     const texture = BLOCK_TEXTURES[blockType];
     const textureIndex = texture[face as keyof typeof texture] || 0;
@@ -208,21 +217,23 @@ export class ChunkMesher {
   }
 
   private getNeighborBlock(chunk: Chunk, neighbors: any, pos: any): BlockData | null {
+    if (pos.y < 0 || pos.y >= CHUNK_HEIGHT) return null;
+
     if (pos.x >= 0 && pos.x < CHUNK_SIZE && pos.z >= 0 && pos.z < CHUNK_SIZE) {
       return chunk.blocks[pos.x]?.[pos.z]?.[pos.y] ?? null;
     }
 
     // Check neighboring chunks
-    if (pos.x < 0 && neighbors.west) {
+    if (pos.x < 0 && neighbors?.west) {
       return neighbors.west.blocks[CHUNK_SIZE + pos.x]?.[pos.z]?.[pos.y] ?? null;
     }
-    if (pos.x >= CHUNK_SIZE && neighbors.east) {
+    if (pos.x >= CHUNK_SIZE && neighbors?.east) {
       return neighbors.east.blocks[pos.x - CHUNK_SIZE]?.[pos.z]?.[pos.y] ?? null;
     }
-    if (pos.z < 0 && neighbors.north) {
+    if (pos.z < 0 && neighbors?.north) {
       return neighbors.north.blocks[pos.x]?.[CHUNK_SIZE + pos.z]?.[pos.y] ?? null;
     }
-    if (pos.z >= CHUNK_SIZE && neighbors.south) {
+    if (pos.z >= CHUNK_SIZE && neighbors?.south) {
       return neighbors.south.blocks[pos.x]?.[pos.z - CHUNK_SIZE]?.[pos.y] ?? null;
     }
 

@@ -76,8 +76,8 @@ export class Player {
 
     document.addEventListener('mousemove', (e) => {
       // Support both native mouse movement and simulated movement from mobile
-      this.mouseX += e.movementX || 0;
-      this.mouseY += e.movementY || 0;
+      this.mouseX = (e.movementX || 0);
+      this.mouseY = (e.movementY || 0);
     });
 
     document.addEventListener('click', () => {
@@ -86,12 +86,14 @@ export class Player {
   }
 
   update(deltaTime: number): void {
-    // Update rotation
-    this.data.rotation.y += this.mouseX * 0.003;
-    this.data.rotation.x -= this.mouseY * 0.003;
+    // Update rotation with mouse movement
+    if (this.mouseX !== 0 || this.mouseY !== 0) {
+      this.data.rotation.y += this.mouseX * 0.003;
+      this.data.rotation.x -= this.mouseY * 0.003;
 
-    // Clamp pitch
-    this.data.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.data.rotation.x));
+      // Clamp pitch
+      this.data.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.data.rotation.x));
+    }
 
     // Update camera
     this.camera.rotation.order = 'YXZ';
@@ -132,16 +134,19 @@ export class Player {
   }
 
   private handleMovement(deltaTime: number): void {
+    // Calculate forward and right vectors from camera rotation
     const forward = new THREE.Vector3();
-    const right = new THREE.Vector3();
+    const right = new THREE.Vector3(1, 0, 0);
 
-    // Get camera forward direction (Z axis)
-    forward.setFromMatrixColumn(this.camera.matrix, 2);
+    // Get forward direction based on camera Y rotation
+    forward.x = Math.sin(this.data.rotation.y);
+    forward.z = Math.cos(this.data.rotation.y);
     forward.y = 0;
     forward.normalize();
 
-    // Get camera right direction (X axis)
-    right.setFromMatrixColumn(this.camera.matrix, 0);
+    // Get right direction (perpendicular to forward)
+    right.x = Math.cos(this.data.rotation.y);
+    right.z = -Math.sin(this.data.rotation.y);
     right.y = 0;
     right.normalize();
 
