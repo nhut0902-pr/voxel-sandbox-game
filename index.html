@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voxel Sandbox Game</title>
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="hud"></div>
+  
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Generating World...</div>
+  </div>
+
+  <div class="pause-menu" id="pauseMenu">
+    <div class="pause-menu-content">
+      <h1>PAUSED</h1>
+      <button onclick="document.getElementById('pauseMenu').classList.remove('active')">Resume</button>
+      <button onclick="openSettings()">Settings</button>
+      <button onclick="saveGame()">Save Game</button>
+      <button onclick="quitGame()">Quit to Menu</button>
+    </div>
+  </div>
+
+  <div class="inventory" id="inventory">
+    <h2>Inventory</h2>
+    <div class="inventory-grid" id="inventoryGrid"></div>
+  </div>
+
+  <div class="settings-menu" id="settingsMenu">
+    <h2>Settings</h2>
+    
+    <div class="setting-item">
+      <label>Master Volume</label>
+      <input type="range" id="masterVolume" min="0" max="100" value="80" />
+    </div>
+
+    <div class="setting-item">
+      <label>Music Volume</label>
+      <input type="range" id="musicVolume" min="0" max="100" value="60" />
+    </div>
+
+    <div class="setting-item">
+      <label>SFX Volume</label>
+      <input type="range" id="sfxVolume" min="0" max="100" value="80" />
+    </div>
+
+    <div class="setting-item">
+      <label>Render Distance</label>
+      <input type="range" id="renderDistance" min="4" max="16" value="8" />
+    </div>
+
+    <div class="setting-item">
+      <label>Creative Mode</label>
+      <input type="checkbox" id="creativeMode" checked />
+    </div>
+
+    <button onclick="closeSettings()" style="width: 100%; padding: 10px; margin-top: 20px; background: #333; color: white; border: 1px solid #666; border-radius: 4px; cursor: pointer;">Close</button>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+  <script>
+    function openSettings() {
+      document.getElementById('settingsMenu').classList.add('active');
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsMenu').classList.remove('active');
+    }
+
+    function saveGame() {
+      console.log('Saving game...');
+      // Game save handled by game.ts
+    }
+
+    function quitGame() {
+      window.location.reload();
+    }
+
+    // Hide loading screen when game starts
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+          loadingScreen.style.display = 'none';
+        }
+      }, 2000);
+    });
+  </script>
+</body>
+</html>
